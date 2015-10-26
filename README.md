@@ -1,0 +1,2 @@
+# BlocksCraft_BIM2SM
+从model中读取几何信息，再在指定的位置绘制新的几何体
