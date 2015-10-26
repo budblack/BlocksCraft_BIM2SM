@@ -7,6 +7,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
+using System.Threading;
 
 using SuperMap.Data;
 using SuperMap.Realspace;
@@ -61,7 +62,7 @@ namespace BlocksCraft
                                 dv = dataset as DatasetVector,
                                 scene = scon.Scene
                             };
-                            p.run();
+                            new Thread(p.run).Start();
                             break;
                     }
                 }
@@ -85,19 +86,17 @@ namespace BlocksCraft
                 GeoModel gm = item.Value.GetGeometry() as GeoModel;
                 Console.WriteLine("==" + gm.Position + "==");
 
-                GeoModel model = new ModelIncubation.CuboidModel(10, 10, 10);
+                GeoModel model = new ModelIncubation.CuboidModel(1, 1, 1);
 
                 //临时处理，未知原因导致Position.Z属性设置无效，手动偏移模型实体
-                model.OffsetModel(new Point3D(0, 0, 1640));
+                model.OffsetModel(new Point3D(0, 0, 1650));
                 model.Position = gm.Position;
- 
                 Console.WriteLine("");
 
                 model.ComputeBoundingBox();
                 scene.TrackingLayer.Add(model, model.Position.ToString());
                 scene.Refresh();
-
-                break;
+                Thread.Sleep(1000);
             }
         }
     }
