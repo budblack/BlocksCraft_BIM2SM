@@ -86,11 +86,12 @@ namespace BlocksCraft
                 GeoModel gm = item.Value.GetGeometry() as GeoModel;
                 Console.WriteLine("==" + gm.Position + "==");
 
-                GeoModel model = new ModelIncubation.CuboidModel(1, 1, 1);
+                GeoModel model = new ModelIncubation.CuboidModel(0.5, 0.5, 0.2);
 
                 //临时处理，未知原因导致Position.Z属性设置无效，手动偏移模型实体
                 model.OffsetModel(new Point3D(0, 0, 1650));
                 model.Position = gm.Position;
+                model.MergeMeshs();
                 Console.WriteLine("");
 
                 model.ComputeBoundingBox();
