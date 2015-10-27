@@ -107,70 +107,10 @@ namespace BlocksCraft.ModelIncubation
             {
                 Mesh mesh = new Mesh();
 
-                Dictionary<int, Vertice> vPDic = new Dictionary<int, Vertice>();
-                List<Index> vPIndex = new List<Index>();
+                Dictionary<int, Vertice> vPDic;
+                List<Index> vPIndex;
 
-                #region 提取数据并结构化
-                foreach (Mesh m in geoModel.Meshes)
-                {
-                    //插入一组mesh并索引三角面
-                    int inLen = m.Indexes.Length;
-                    for (int i = 0; i < inLen; i += 3)
-                    {
-                        #region 结构化被索引的三个点对象，并依据hash插入dictionary
-                        //相同坐标的点具有相同的hash
-                        Normal nor = new Normal();
-                        nor.X = m.Normals[3 * (m.Indexes[i])]; nor.Y = m.Normals[3 * (m.Indexes[i]) + 1]; nor.Z = m.Normals[3 * (m.Indexes[i]) + 2];
-                        Vertice vP1 = new Vertice(Convert.ToInt32(m.Vertices[3 * (m.Indexes[i])] * Math.Pow(10, Tolerance)) / Convert.ToDouble((Math.Pow(10, Tolerance))),
-                                                    Convert.ToInt32(m.Vertices[3 * (m.Indexes[i]) + 1] * Math.Pow(10, Tolerance)) / (Math.Pow(10, Tolerance)),
-                                                    Convert.ToInt32(m.Vertices[3 * (m.Indexes[i]) + 2] * Math.Pow(10, Tolerance)) / (Math.Pow(10, Tolerance)))
-                                                    {
-                                                        Normal = nor
-                                                    };
-                        nor.X = m.Normals[3 * (m.Indexes[i + 1])]; nor.Y = m.Normals[3 * (m.Indexes[i + 1]) + 1]; nor.Z = m.Normals[3 * (m.Indexes[i + 1])+2];
-                        Vertice vP2 = new Vertice(Convert.ToInt32(m.Vertices[3 * (m.Indexes[i + 1])] * Math.Pow(10, Tolerance)) / (Math.Pow(10, Tolerance)),
-                                                    Convert.ToInt32(m.Vertices[3 * (m.Indexes[i + 1]) + 1] * Math.Pow(10, Tolerance)) / (Math.Pow(10, Tolerance)),
-                                                    Convert.ToInt32(m.Vertices[3 * (m.Indexes[i + 1]) + 2] * Math.Pow(10, Tolerance)) / (Math.Pow(10, Tolerance)))
-                                                    {
-                                                        Normal = nor
-                                                    };
-                        nor.X = m.Normals[3 * (m.Indexes[i + 2])]; nor.Y = m.Normals[3 * (m.Indexes[i + 2]) + 1]; nor.Z = m.Normals[3 * (m.Indexes[i + 2])+2];
-                        Vertice vP3 = new Vertice(Convert.ToInt32(m.Vertices[3 * (m.Indexes[i + 2])] * Math.Pow(10, Tolerance)) / (Math.Pow(10, Tolerance)),
-                                                    Convert.ToInt32(m.Vertices[3 * (m.Indexes[i + 2]) + 1] * Math.Pow(10, Tolerance)) / (Math.Pow(10, Tolerance)),
-                                                    Convert.ToInt32(m.Vertices[3 * (m.Indexes[i + 2]) + 2] * Math.Pow(10, Tolerance)) / (Math.Pow(10, Tolerance)))
-                                                    {
-                                                        Normal = nor
-                                                    };
-
-                        //插入点并计算该点法向量，如果已存在点则累加法向量
-                        if (!vPDic.ContainsKey(vP1.HashCode)) vPDic.Add(vP1.HashCode, vP1);
-                        vPDic[vP1.HashCode].Normal.X += vP1.Normal.X;
-                        vPDic[vP1.HashCode].Normal.Y += vP1.Normal.Y;
-                        vPDic[vP1.HashCode].Normal.Z += vP1.Normal.Z;
-
-                        if (!vPDic.ContainsKey(vP2.HashCode)) vPDic.Add(vP2.HashCode, vP2);
-                        vPDic[vP2.HashCode].Normal.X += vP2.Normal.X;
-                        vPDic[vP2.HashCode].Normal.Y += vP2.Normal.Y;
-                        vPDic[vP2.HashCode].Normal.Z += vP2.Normal.Z;
-
-                        if (!vPDic.ContainsKey(vP3.HashCode)) vPDic.Add(vP3.HashCode, vP3);
-                        vPDic[vP3.HashCode].Normal.X += vP3.Normal.X;
-                        vPDic[vP3.HashCode].Normal.Y += vP3.Normal.Y;
-                        vPDic[vP3.HashCode].Normal.Z += vP3.Normal.Z;
-
-                        #endregion
-
-                        Index Index = new Index()
-                        {
-                            P1 = vP1.HashCode,
-                            P2 = vP2.HashCode,
-                            P3 = vP3.HashCode
-                        };
-
-                        vPIndex.Add(Index);
-                    }
-                }
-                #endregion
+                geoModel.structureData(Tolerance,out vPDic,out vPIndex);
 
                 #region 输出结构化数据到顺序数组
                 //double[] Vertices = new double[vPDic.Count*3];
@@ -219,7 +159,7 @@ namespace BlocksCraft.ModelIncubation
                 geoModel.Meshes.Add(mesh);
             }
         }
-        class Vertice
+       public  class Vertice
         {
             public int HashCode;
 
@@ -244,13 +184,153 @@ namespace BlocksCraft.ModelIncubation
                 return s.GetHashCode();
             }
         };
-        class Index
+       public class Index
         {
             public Int32 P1, P2, P3;
         }
-        class Normal
+       public class Normal
         {
             public double X=0, Y=0, Z=0;
+        }
+
+
+
+        /// <summary>
+        /// 提取结构化的数据
+        /// </summary>
+        /// <param name="geoModel"></param>
+        /// <param name="Tolerance"></param>
+        /// <param name="vPDic"></param>
+        /// <param name="vPIndex"></param>
+        public static void structureData(this GeoModel geoModel,int Tolerance, out Dictionary<int, Vertice> vPDic, out  List<Index> vPIndex)
+        {
+            vPDic = new Dictionary<int, Vertice>();
+            vPIndex = new List<Index>();
+
+            #region 提取数据并结构化
+            foreach (Mesh m in geoModel.Meshes)
+            {
+                //插入一组mesh并索引三角面
+                int inLen = m.Indexes.Length;
+                for (int i = 0; i < inLen; i += 3)
+                {
+                    #region 结构化被索引的三个点对象，并依据hash插入dictionary
+                    //相同坐标的点具有相同的hash
+                    Normal nor = new Normal();
+                    nor.X = m.Normals[3 * (m.Indexes[i])]; nor.Y = m.Normals[3 * (m.Indexes[i]) + 1]; nor.Z = m.Normals[3 * (m.Indexes[i]) + 2];
+                    Vertice vP1 = new Vertice(Convert.ToInt32(m.Vertices[3 * (m.Indexes[i])] * Math.Pow(10, Tolerance)) / Convert.ToDouble((Math.Pow(10, Tolerance))),
+                                                Convert.ToInt32(m.Vertices[3 * (m.Indexes[i]) + 1] * Math.Pow(10, Tolerance)) / (Math.Pow(10, Tolerance)),
+                                                Convert.ToInt32(m.Vertices[3 * (m.Indexes[i]) + 2] * Math.Pow(10, Tolerance)) / (Math.Pow(10, Tolerance)))
+                    {
+                        Normal = nor
+                    };
+                    nor.X = m.Normals[3 * (m.Indexes[i + 1])]; nor.Y = m.Normals[3 * (m.Indexes[i + 1]) + 1]; nor.Z = m.Normals[3 * (m.Indexes[i + 1]) + 2];
+                    Vertice vP2 = new Vertice(Convert.ToInt32(m.Vertices[3 * (m.Indexes[i + 1])] * Math.Pow(10, Tolerance)) / (Math.Pow(10, Tolerance)),
+                                                Convert.ToInt32(m.Vertices[3 * (m.Indexes[i + 1]) + 1] * Math.Pow(10, Tolerance)) / (Math.Pow(10, Tolerance)),
+                                                Convert.ToInt32(m.Vertices[3 * (m.Indexes[i + 1]) + 2] * Math.Pow(10, Tolerance)) / (Math.Pow(10, Tolerance)))
+                    {
+                        Normal = nor
+                    };
+                    nor.X = m.Normals[3 * (m.Indexes[i + 2])]; nor.Y = m.Normals[3 * (m.Indexes[i + 2]) + 1]; nor.Z = m.Normals[3 * (m.Indexes[i + 2]) + 2];
+                    Vertice vP3 = new Vertice(Convert.ToInt32(m.Vertices[3 * (m.Indexes[i + 2])] * Math.Pow(10, Tolerance)) / (Math.Pow(10, Tolerance)),
+                                                Convert.ToInt32(m.Vertices[3 * (m.Indexes[i + 2]) + 1] * Math.Pow(10, Tolerance)) / (Math.Pow(10, Tolerance)),
+                                                Convert.ToInt32(m.Vertices[3 * (m.Indexes[i + 2]) + 2] * Math.Pow(10, Tolerance)) / (Math.Pow(10, Tolerance)))
+                    {
+                        Normal = nor
+                    };
+
+                    //插入点并计算该点法向量，如果已存在点则累加法向量
+                    if (!vPDic.ContainsKey(vP1.HashCode)) vPDic.Add(vP1.HashCode, vP1);
+                    vPDic[vP1.HashCode].Normal.X += vP1.Normal.X;
+                    vPDic[vP1.HashCode].Normal.Y += vP1.Normal.Y;
+                    vPDic[vP1.HashCode].Normal.Z += vP1.Normal.Z;
+
+                    if (!vPDic.ContainsKey(vP2.HashCode)) vPDic.Add(vP2.HashCode, vP2);
+                    vPDic[vP2.HashCode].Normal.X += vP2.Normal.X;
+                    vPDic[vP2.HashCode].Normal.Y += vP2.Normal.Y;
+                    vPDic[vP2.HashCode].Normal.Z += vP2.Normal.Z;
+
+                    if (!vPDic.ContainsKey(vP3.HashCode)) vPDic.Add(vP3.HashCode, vP3);
+                    vPDic[vP3.HashCode].Normal.X += vP3.Normal.X;
+                    vPDic[vP3.HashCode].Normal.Y += vP3.Normal.Y;
+                    vPDic[vP3.HashCode].Normal.Z += vP3.Normal.Z;
+
+                    #endregion
+
+                    Index Index = new Index()
+                    {
+                        P1 = vP1.HashCode,
+                        P2 = vP2.HashCode,
+                        P3 = vP3.HashCode
+                    };
+
+                    vPIndex.Add(Index);
+                }
+            }
+            #endregion
+        }
+
+        /// <summary>
+        /// 按平面切割模型
+        /// </summary>
+        /// <param name="geoModel"></param>
+        /// <param name="surface">切割平面</param>
+        public static void ClipModel(this GeoModel geoModel, Surface surface)
+        {
+            #region 提取顶点
+            Dictionary<int, Vertice> vPDic;
+            List<Index> vPIndex;
+
+            geoModel.structureData(2, out vPDic, out vPIndex);
+            #endregion
+
+            foreach (Index index in vPIndex)
+            {
+
+
+                #region 找到至少具有一点高于切割平面的三角面
+                if (!surface.isBelowMe(vPDic[index.P1]) || !surface.isBelowMe(vPDic[index.P2]) || !surface.isBelowMe(vPDic[index.P3]))
+                {
+
+                    //第一步去掉都三个顶点都在切割面上方的三角面
+                    if (!surface.isBelowMe(vPDic[index.P1]) && !surface.isBelowMe(vPDic[index.P2]) && !surface.isBelowMe(vPDic[index.P3]))
+                    {
+                        //vPDic.Remove(index.P1); vPDic.Remove(index.P2); vPDic.Remove(index.P3);
+                        //只需要删掉索引！不要删掉点，这个点还可能被其它三角面索引到，而其它三角面可能与切割平面相交
+                        vPIndex.Remove(index);
+                    }
+
+                    //剩下的就是和切割平面相交的三角面。这里开始计算三角形边与平面的交点
+                    #region 交点函数
+
+                    #endregion
+                }
+                #endregion
+            }
+        }
+        
+        /// <summary>
+        /// 平面Ax+By+Cz+D=0
+        /// 保留在平面正法线方向小的点
+        /// </summary>
+        public class Surface{
+            public double A,B,C,D;
+
+            public Surface(double A=1, double B=1,double C=1,double D=-1)
+            {
+                this.A = A;
+                this.B = B;
+                this.C = C;
+                this.D = D;
+            }
+
+            public bool isBelowMe(Vertice vP)
+            {
+                if (A * vP.X + B * vP.Y + C * vP.Z + C <= 0)
+                    return true;
+                else
+                    return false;
+            }
         }
     }
 }
