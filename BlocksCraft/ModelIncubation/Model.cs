@@ -112,51 +112,7 @@ namespace BlocksCraft.ModelIncubation
 
                 geoModel.structureData(Tolerance,out vPDic,out vPIndex);
 
-                #region 输出结构化数据到顺序数组
-                //double[] Vertices = new double[vPDic.Count*3];
-                double[] Vertices = new double[vPIndex.Count * 3 * 3];//由于顶点被按照索引展开，这里需要额外的空间。
-                Int32[] Indexes = new Int32[vPIndex.Count * 3];
-                double[] Normals = new double[Vertices.Length];
-
-                int j = 0;
-                for (int i = 0; i < Indexes.Length; i++)
-                {
-                    Indexes[i] = i;//顺序写入索引，之后的点序列按照这个索引展开
-                }
-                foreach (Index index in vPIndex)
-                {
-                    //这里又产生了重复数据，我不知道要怎么再不产生重复的基础上写入数组
-                    #region 依赖索引list写入顶点数组，此过程多次索引的顶点被展开了
-                    Vertices[j] = vPDic[index.P1].X; Vertices[j + 1] = vPDic[index.P1].Y; Vertices[j + 2] = vPDic[index.P1].Z;
-                    Vertices[j + 3] = vPDic[index.P2].X; Vertices[j + 4] = vPDic[index.P2].Y; Vertices[j + 5] = vPDic[index.P2].Z;
-                    Vertices[j + 6] = vPDic[index.P3].X; Vertices[j + 7] = vPDic[index.P3].Y; Vertices[j + 8] = vPDic[index.P3].Z;
-                    #endregion
-
-                    #region 写入法向量
-                    Normals[j / 9] = vPDic[index.P1].Normal.X;
-                    Normals[(j / 9) + 1] = vPDic[index.P1].Normal.Y;
-                    Normals[(j / 9) + 2] = vPDic[index.P1].Normal.Z;
-                    
-                    Normals[(j / 9) + 3] = vPDic[index.P2].Normal.X;
-                    Normals[(j / 9) + 4] = vPDic[index.P2].Normal.Y;
-                    Normals[(j / 9) + 5] = vPDic[index.P2].Normal.Z;
-
-                    Normals[(j / 9) + 6] = vPDic[index.P3].Normal.X;
-                    Normals[(j / 9) + 7] = vPDic[index.P3].Normal.Y;
-                    Normals[(j / 9) + 8] = vPDic[index.P3].Normal.Z;
-
-                    #endregion
-
-                    j += 9;
-                }
-                #endregion
-
-                mesh.Vertices = Vertices;
-                mesh.Indexes = Indexes;
-                mesh.Normals = Normals;
-
-                geoModel.Meshes.Clear();
-                geoModel.Meshes.Add(mesh);
+                geoModel.MakeMesh(vPDic, vPIndex);
             }
         }
        public  class Vertice
@@ -193,7 +149,64 @@ namespace BlocksCraft.ModelIncubation
             public double X=0, Y=0, Z=0;
         }
 
+        /// <summary>
+        /// 根据结构化的数据制作mesh
+        /// </summary>
+        /// <param name="geoModel"></param>
+        /// <param name="vPDic">顶点集合</param>
+        /// <param name="vPIndex">索引列表</param>
+       public static void MakeMesh(this GeoModel geoModel, Dictionary<int, Vertice> vPDic, List<Index> vPIndex)
+       {
+           #region 输出结构化数据到顺序数组
+           //double[] Vertices = new double[vPDic.Count*3];
+           double[] Vertices = new double[vPIndex.Count * 3 * 3];//由于顶点被按照索引展开，这里需要额外的空间。
+           Int32[] Indexes = new Int32[vPIndex.Count * 3];
+           double[] Normals = new double[Vertices.Length];
 
+           int j = 0;
+           for (int i = 0; i < Indexes.Length; i++)
+           {
+               Indexes[i] = i;//顺序写入索引，之后的点序列按照这个索引展开
+           }
+           foreach (Index index in vPIndex)
+           {
+               //这里又产生了重复数据，我不知道要怎么再不产生重复的基础上写入数组
+               #region 依赖索引list写入顶点数组，此过程多次索引的顶点被展开了
+               Vertices[j] = vPDic[index.P1].X; Vertices[j + 1] = vPDic[index.P1].Y; Vertices[j + 2] = vPDic[index.P1].Z;
+               Vertices[j + 3] = vPDic[index.P2].X; Vertices[j + 4] = vPDic[index.P2].Y; Vertices[j + 5] = vPDic[index.P2].Z;
+               Vertices[j + 6] = vPDic[index.P3].X; Vertices[j + 7] = vPDic[index.P3].Y; Vertices[j + 8] = vPDic[index.P3].Z;
+               #endregion
+
+               #region 计算法向量
+               geoModel.CalculateNormals(ref vPDic, vPIndex);
+               #endregion
+
+               #region 写入法向量
+               Normals[j / 9] = vPDic[index.P1].Normal.X;
+               Normals[(j / 9) + 1] = vPDic[index.P1].Normal.Y;
+               Normals[(j / 9) + 2] = vPDic[index.P1].Normal.Z;
+
+               Normals[(j / 9) + 3] = vPDic[index.P2].Normal.X;
+               Normals[(j / 9) + 4] = vPDic[index.P2].Normal.Y;
+               Normals[(j / 9) + 5] = vPDic[index.P2].Normal.Z;
+
+               Normals[(j / 9) + 6] = vPDic[index.P3].Normal.X;
+               Normals[(j / 9) + 7] = vPDic[index.P3].Normal.Y;
+               Normals[(j / 9) + 8] = vPDic[index.P3].Normal.Z;
+
+               #endregion
+
+               j += 9;
+           }
+           #endregion
+           Mesh mesh = new Mesh();
+           mesh.Vertices = Vertices;
+           mesh.Indexes = Indexes;
+           mesh.Normals = Normals;
+
+           //geoModel.Meshes.Clear();
+           geoModel.Meshes.Add(mesh);
+       }
 
         /// <summary>
         /// 提取结构化的数据
@@ -284,39 +297,236 @@ namespace BlocksCraft.ModelIncubation
             geoModel.structureData(2, out vPDic, out vPIndex);
             #endregion
 
+            List<Index> wellBeRm = new List<Index>();
+            List<Index> wellBeAdd = new List<Index>();
             foreach (Index index in vPIndex)
             {
-
-
                 #region 找到至少具有一点高于切割平面的三角面
                 if (!surface.isBelowMe(vPDic[index.P1]) || !surface.isBelowMe(vPDic[index.P2]) || !surface.isBelowMe(vPDic[index.P3]))
                 {
-
+                    wellBeRm.Add(index);
                     //第一步去掉都三个顶点都在切割面上方的三角面
                     if (!surface.isBelowMe(vPDic[index.P1]) && !surface.isBelowMe(vPDic[index.P2]) && !surface.isBelowMe(vPDic[index.P3]))
                     {
                         //vPDic.Remove(index.P1); vPDic.Remove(index.P2); vPDic.Remove(index.P3);
                         //只需要删掉索引！不要删掉点，这个点还可能被其它三角面索引到，而其它三角面可能与切割平面相交
-                        vPIndex.Remove(index);
+                        //这里不能直接在循环体内删除。应该记录列表，待循环完毕后再统一删，否则会打乱集合。
+                        //vPIndex.Remove(index);
+                        //这里逻辑应该是都会删掉的，移到判断外去执行了
+                        //wellBeRm.Add(index);
                     }
+                    else
+                    {
+                        //剩下的就是和切割平面相交的三角面。这里开始计算三角形边与平面的交点
+                        #region 计算交点的函数
+                        //P1在下
+                        if (surface.isBelowMe(vPDic[index.P1]))
+                        {
+                            #region
+                            //P1,P2在下，P3在上
+                            if (surface.isBelowMe(vPDic[index.P2]))
+                            {
+                                #region
+                                Vertice vP1 = surface.Intersect(vPDic[index.P1], vPDic[index.P3]);//第一个交点
+                                Vertice vP2 = surface.Intersect(vPDic[index.P2], vPDic[index.P3]);//第二个交点
 
-                    //剩下的就是和切割平面相交的三角面。这里开始计算三角形边与平面的交点
-                    #region 交点函数
+                                //插入新生成的两个点，并添加这两点和剩下两点构成三角面的索引。
+                                if (!vPDic.ContainsKey(vP1.HashCode)) vPDic.Add(vP1.HashCode, vP1);
+                                if (!vPDic.ContainsKey(vP2.HashCode)) vPDic.Add(vP2.HashCode, vP2);
+                                //连接P1和vP2,构成两个三角形
+                                Index vIn1 = new Index()
+                                {
+                                    P1 = vP1.HashCode,
+                                    P2 = vP2.HashCode,
+                                    P3 = vPDic[index.P1].HashCode
+                                };
+                                Index vIn2 = new Index()
+                                {
+                                    P1 = vPDic[index.P1].HashCode,
+                                    P2 = vP2.HashCode,
+                                    P3 = vPDic[index.P2].HashCode
+                                };
+                                //同理这里不能直接编辑当前循环的list
+                                //vPIndex.Add(vIn1);
+                                //vPIndex.Add(vIn2);
+                                wellBeAdd.Add(vIn1);
+                                wellBeAdd.Add(vIn2);
+                                #endregion
+                            }
+                            //P1,P3在下，P2在上
+                            else if (surface.isBelowMe(vPDic[index.P3]))
+                            {
+                                #region
+                                Vertice vP1 = surface.Intersect(vPDic[index.P1], vPDic[index.P2]);//第一个交点
+                                Vertice vP2 = surface.Intersect(vPDic[index.P3], vPDic[index.P2]);//第二个交点
 
-                    #endregion
+                                //插入新生成的两个点，并添加这两点和剩下两点构成三角面的索引。
+                                if (!vPDic.ContainsKey(vP1.HashCode)) vPDic.Add(vP1.HashCode, vP1);
+                                if (!vPDic.ContainsKey(vP2.HashCode)) vPDic.Add(vP2.HashCode, vP2);
+                                //连接P1和vP2,构成两个三角形
+                                Index vIn1 = new Index()
+                                {
+                                    P1 = vP1.HashCode,
+                                    P2 = vP2.HashCode,
+                                    P3 = vPDic[index.P1].HashCode
+                                };
+                                Index vIn2 = new Index()
+                                {
+                                    P1 = vPDic[index.P1].HashCode,
+                                    P2 = vP2.HashCode,
+                                    P3 = vPDic[index.P3].HashCode
+                                };
+                                //vPIndex.Add(vIn1);
+                                //vPIndex.Add(vIn2);
+                                wellBeAdd.Add(vIn1);
+                                wellBeAdd.Add(vIn2);
+                                #endregion
+                            }
+                            #endregion
+                        }
+                        else
+                        //P1在上
+                        {
+                            #region
+                            //P1,P2在上，P3在下
+                            if (!surface.isBelowMe(vPDic[index.P2]))
+                            {
+                                #region
+                                Vertice vP1 = surface.Intersect(vPDic[index.P3], vPDic[index.P2]);//第一个交点
+                                Vertice vP2 = surface.Intersect(vPDic[index.P3], vPDic[index.P1]);//第二个交点
+
+                                //插入新生成的两个点，并添加这两点和剩下一点构成三角面的索引
+                                if (!vPDic.ContainsKey(vP1.HashCode)) vPDic.Add(vP1.HashCode, vP1);
+                                if (!vPDic.ContainsKey(vP2.HashCode)) vPDic.Add(vP2.HashCode, vP2);
+                                Index vIn = new Index()
+                                {
+                                    P1 = vP1.HashCode,
+                                    P2 = vP2.HashCode,
+                                    P3 = vPDic[index.P3].HashCode
+                                };
+                                //vPIndex.Add(vIn);
+                                wellBeAdd.Add(vIn);
+                                #endregion
+                            }
+                            //P1,P3在上，P2在下
+                            else if (!surface.isBelowMe(vPDic[index.P3]))
+                            {
+                                #region
+                                Vertice vP1 = surface.Intersect(vPDic[index.P2], vPDic[index.P3]);//第一个交点
+                                Vertice vP2 = surface.Intersect(vPDic[index.P2], vPDic[index.P1]);//第二个交点
+
+                                //插入新生成的两个点，并添加这两点和剩下一点构成三角面的索引
+                                if (!vPDic.ContainsKey(vP1.HashCode)) vPDic.Add(vP1.HashCode, vP1);
+                                if (!vPDic.ContainsKey(vP2.HashCode)) vPDic.Add(vP2.HashCode, vP2);
+                                Index vIn = new Index()
+                                {
+                                    P1 = vP1.HashCode,
+                                    P2 = vP2.HashCode,
+                                    P3 = vPDic[index.P2].HashCode
+                                };
+                                //vPIndex.Add(vIn);
+                                wellBeAdd.Add(vIn);
+                                #endregion
+                            }
+                            //P1在上，P2,P3在下
+                            else
+                            {
+                                #region
+                                Vertice vP1 = surface.Intersect(vPDic[index.P2], vPDic[index.P1]);//第一个交点
+                                Vertice vP2 = surface.Intersect(vPDic[index.P3], vPDic[index.P1]);//第二个交点
+
+                                //插入新生成的两个点，并添加这两点和剩下两点构成三角面的索引。
+                                if (!vPDic.ContainsKey(vP1.HashCode)) vPDic.Add(vP1.HashCode, vP1);
+                                if (!vPDic.ContainsKey(vP2.HashCode)) vPDic.Add(vP2.HashCode, vP2);
+                                //连接P1和vP2,构成两个三角形
+                                Index vIn1 = new Index()
+                                {
+                                    P1 = vP1.HashCode,
+                                    P2 = vP2.HashCode,
+                                    P3 = vPDic[index.P2].HashCode
+                                };
+                                Index vIn2 = new Index()
+                                {
+                                    P1 = vPDic[index.P2].HashCode,
+                                    P2 = vP2.HashCode,
+                                    P3 = vPDic[index.P3].HashCode
+                                };
+                                //vPIndex.Add(vIn1);
+                                //vPIndex.Add(vIn2);
+                                wellBeAdd.Add(vIn1);
+                                wellBeAdd.Add(vIn2);
+                                #endregion
+                            }
+                            #endregion
+                        }
+
+                        //surface.Intersect()
+                        #endregion
+                    }
                 }
                 #endregion
             }
+            //统一删除刚刚记录的三角面
+            foreach (Index index in wellBeRm) { 
+                vPIndex.Remove(index);}
+            //统一添加
+            foreach (Index index in wellBeAdd)
+            {
+                Console.WriteLine("=添加点=");
+                Console.WriteLine(string.Format("{0},{1},{2}", vPDic[index.P1].X, vPDic[index.P1].Y, vPDic[index.P1].Z));
+                Console.WriteLine(string.Format("{0},{1},{2}", vPDic[index.P2].X, vPDic[index.P1].Y, vPDic[index.P2].Z));
+                Console.WriteLine(string.Format("{0},{1},{2}", vPDic[index.P3].X, vPDic[index.P1].Y, vPDic[index.P3].Z));
+                Console.WriteLine("========");
+
+                vPIndex.Add(index);
+            }
+
+            Point3Ds ps = new Point3Ds();
+            ps.ImportVPList(vPDic,wellBeAdd);
+            Mesh m = geoModel.CreateMesh(ps);
+            geoModel.Meshes.Clear();
+            geoModel.Meshes.Add(m);
+            geoModel.MakeMesh(vPDic, vPIndex);
         }
-        
+
+        /// <summary>
+        /// 计算法向量
+        /// </summary>
+        /// <param name="geoModel"></param>
+        public static void CalculateNormals(this GeoModel geoModel, ref Dictionary<int, Vertice> vPDic, List<Index> vPIndex)
+        {
+            Normal normal = new Normal();
+            foreach (Index index in vPIndex)
+            {
+                double a1 = vPDic[index.P2].X - vPDic[index.P1].X,
+                   a2 = vPDic[index.P2].Y - vPDic[index.P1].Y,
+                   a3 = vPDic[index.P2].Z - vPDic[index.P1].Z,
+
+                   b1 = vPDic[index.P3].X - vPDic[index.P1].X,
+                   b2 = vPDic[index.P3].Y - vPDic[index.P1].Y,
+                   b3 = vPDic[index.P3].Z - vPDic[index.P1].Z;
+
+                double aXb1 = a2 * b3 - a3 * b2,
+                       aXb2 = a3 * b1 - a1 * b3,
+                       aXb3 = a1 * b2 - a2 * b1;
+
+                normal.X = aXb1; normal.Y = aXb2; normal.Z = aXb3;
+                vPDic[index.P1].Normal = normal;
+                vPDic[index.P2].Normal = normal;
+                vPDic[index.P3].Normal = normal;
+            }
+        }
+
+
         /// <summary>
         /// 平面Ax+By+Cz+D=0
         /// 保留在平面正法线方向小的点
         /// </summary>
-        public class Surface{
-            public double A,B,C,D;
+        public class Surface
+        {
+            public double A, B, C, D;
 
-            public Surface(double A=1, double B=1,double C=1,double D=-1)
+            public Surface(double A = 1, double B = 1, double C = 1, double D = -1)
             {
                 this.A = A;
                 this.B = B;
@@ -326,10 +536,50 @@ namespace BlocksCraft.ModelIncubation
 
             public bool isBelowMe(Vertice vP)
             {
-                if (A * vP.X + B * vP.Y + C * vP.Z + C <= 0)
+                if (A * vP.X + B * vP.Y + C * vP.Z + D <= 0)
                     return true;
                 else
                     return false;
+            }
+
+            public Vertice Intersect(Vertice p1, Vertice p2)
+            {
+                Vertice p = new Vertice(0, 0, 0);
+                double vp1, vp2, vp3, n1, n2, n3, v1, v2, v3, m1, m2, m3, t, vpt;
+                vp1 = this.A; vp2 = this.B; vp3 = this.C;
+                n1 = 0; n2 = 0; n3 = -1 * D / C;
+                v1 = p2.X - p1.X; v2 = p2.Y - p1.Y; v3 = p2.Z - p1.Z;
+                m1 = p1.X; m2 = p1.Y; m3 = p1.Z;
+                vpt = v1 * vp1 + v2 * vp2 + v3 * vp3;
+                //首先判断直线是否与平面平行
+                if (vpt == 0)
+                {
+                    p = null;
+                }
+                else
+                {
+                    t = ((n1 - m1) * vp1 + (n2 - m2) * vp2 + (n3 - m3) * vp3) / vpt;
+                    p.X = m1 + v1 * t;
+                    p.Y = m2 + v2 * t;
+                    p.Z = m3 + v3 * t;
+
+                    Console.WriteLine("==交点==");
+                    Console.WriteLine(string.Format("{0},{1},{2}  ---  {3},{4},{5}", p1.X, p1.Y, p1.Z, p2.X, p2.Y, p2.Z));
+                    Console.WriteLine(string.Format("{0},{1},{2}",p.X,p.Y,p.Z));
+                    Console.WriteLine("========");
+                }
+
+                return p;
+            }
+        }
+
+        public static void ImportVPList(this Point3Ds ps,Dictionary<int, Vertice> vPDic, List<Index> vPIndex)
+        {
+            foreach (Index index in vPIndex)
+            {
+                ps.Add(new Point3D(vPDic[index.P1].X, vPDic[index.P1].Y, vPDic[index.P1].Z));
+                ps.Add(new Point3D(vPDic[index.P2].X, vPDic[index.P2].Y, vPDic[index.P2].Z));
+                ps.Add(new Point3D(vPDic[index.P3].X, vPDic[index.P3].Y, vPDic[index.P3].Z));
             }
         }
     }

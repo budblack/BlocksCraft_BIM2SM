@@ -78,7 +78,6 @@ namespace BlocksCraft
         public void run()
         {
             Recordset rc = dv.GetRecordset(false, CursorType.Dynamic);
-            GeoModel pm;
             Dictionary<int, Feature> feas = rc.GetAllFeatures();
 
             foreach (KeyValuePair<int, Feature> item in feas)
@@ -86,18 +85,25 @@ namespace BlocksCraft
                 GeoModel gm = item.Value.GetGeometry() as GeoModel;
                 Console.WriteLine("==" + gm.Position + "==");
 
-                GeoModel model = new ModelIncubation.CuboidModel(1, 1, 1);
+                GeoModel model = new ModelIncubation.CuboidModel(0.5, 0.5, 10);
+
 
                 //临时处理，未知原因导致Position.Z属性设置无效，手动偏移模型实体
                 model.OffsetModel(new Point3D(0, 0, 1650));
                 model.Position = gm.Position;
                 model.MergeMeshs();
                 Console.WriteLine("");
-
+                #region 模型切割测试
+                GeoModelEx.Surface s = new GeoModelEx.Surface(0, 0, 1, -1652);
+                model.ClipModel(s);
+                #endregion
+                model.Position = gm.Position;
                 model.ComputeBoundingBox();
                 scene.TrackingLayer.Add(model, model.Position.ToString());
                 scene.Refresh();
                 Thread.Sleep(1000);
+
+                //break;
             }
         }
     }
