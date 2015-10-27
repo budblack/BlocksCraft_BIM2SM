@@ -101,7 +101,7 @@ namespace BlocksCraft.ModelIncubation
         /// </summary>
         /// <param name="geoModel"></param>
         /// <param name="Tolerance">容差，小数点后位数。设置后所有点坐标的小数点后只保留该长度（这个功能还没想好，暂时无视掉←，←）</param>
-        public static void MergeMeshs(this GeoModel geoModel, int Tolerance=0)
+        public static void MergeMeshs(this GeoModel geoModel, int Tolerance=2)
         {
             if (geoModel.Meshes.Count > 0)
             {
@@ -119,29 +119,44 @@ namespace BlocksCraft.ModelIncubation
                     {
                         #region 结构化被索引的三个点对象，并依据hash插入dictionary
                         //相同坐标的点具有相同的hash
-                        Vertice vP1 = new Vertice()
-                        {
-                            X = m.Vertices[m.Indexes[i]],
-                            Y = m.Vertices[m.Indexes[i] + 1],
-                            Z = m.Vertices[m.Indexes[i] + 2]
-                        };
-                        Vertice vP2 = new Vertice()
-                        {
-                            X = m.Vertices[m.Indexes[i + 1]],
-                            Y = m.Vertices[m.Indexes[i + 1] + 1],
-                            Z = m.Vertices[m.Indexes[i + 1] + 2]
-                        };
-                        Vertice vP3 = new Vertice()
-                        {
-                            X = m.Vertices[m.Indexes[i + 2]],
-                            Y = m.Vertices[m.Indexes[i + 2] + 1],
-                            Z = m.Vertices[m.Indexes[i + 2] + 2]
-                        };
+                        Normal nor = new Normal();
+                        nor.X = m.Normals[3 * (m.Indexes[i])]; nor.Y = m.Normals[3 * (m.Indexes[i]) + 1]; nor.Z = m.Normals[3 * (m.Indexes[i]) + 2];
+                        Vertice vP1 = new Vertice(Convert.ToInt32(m.Vertices[3 * (m.Indexes[i])] * Math.Pow(10, Tolerance)) / Convert.ToDouble((Math.Pow(10, Tolerance))),
+                                                    Convert.ToInt32(m.Vertices[3 * (m.Indexes[i]) + 1] * Math.Pow(10, Tolerance)) / (Math.Pow(10, Tolerance)),
+                                                    Convert.ToInt32(m.Vertices[3 * (m.Indexes[i]) + 2] * Math.Pow(10, Tolerance)) / (Math.Pow(10, Tolerance)))
+                                                    {
+                                                        Normal = nor
+                                                    };
+                        nor.X = m.Normals[3 * (m.Indexes[i + 1])]; nor.Y = m.Normals[3 * (m.Indexes[i + 1]) + 1]; nor.Z = m.Normals[3 * (m.Indexes[i + 1])+2];
+                        Vertice vP2 = new Vertice(Convert.ToInt32(m.Vertices[3 * (m.Indexes[i + 1])] * Math.Pow(10, Tolerance)) / (Math.Pow(10, Tolerance)),
+                                                    Convert.ToInt32(m.Vertices[3 * (m.Indexes[i + 1]) + 1] * Math.Pow(10, Tolerance)) / (Math.Pow(10, Tolerance)),
+                                                    Convert.ToInt32(m.Vertices[3 * (m.Indexes[i + 1]) + 2] * Math.Pow(10, Tolerance)) / (Math.Pow(10, Tolerance)))
+                                                    {
+                                                        Normal = nor
+                                                    };
+                        nor.X = m.Normals[3 * (m.Indexes[i + 2])]; nor.Y = m.Normals[3 * (m.Indexes[i + 2]) + 1]; nor.Z = m.Normals[3 * (m.Indexes[i + 2])+2];
+                        Vertice vP3 = new Vertice(Convert.ToInt32(m.Vertices[3 * (m.Indexes[i + 2])] * Math.Pow(10, Tolerance)) / (Math.Pow(10, Tolerance)),
+                                                    Convert.ToInt32(m.Vertices[3 * (m.Indexes[i + 2]) + 1] * Math.Pow(10, Tolerance)) / (Math.Pow(10, Tolerance)),
+                                                    Convert.ToInt32(m.Vertices[3 * (m.Indexes[i + 2]) + 2] * Math.Pow(10, Tolerance)) / (Math.Pow(10, Tolerance)))
+                                                    {
+                                                        Normal = nor
+                                                    };
 
                         //插入点并计算该点法向量，如果已存在点则累加法向量
                         if (!vPDic.ContainsKey(vP1.HashCode)) vPDic.Add(vP1.HashCode, vP1);
+                        vPDic[vP1.HashCode].Normal.X += vP1.Normal.X;
+                        vPDic[vP1.HashCode].Normal.Y += vP1.Normal.Y;
+                        vPDic[vP1.HashCode].Normal.Z += vP1.Normal.Z;
+
                         if (!vPDic.ContainsKey(vP2.HashCode)) vPDic.Add(vP2.HashCode, vP2);
+                        vPDic[vP2.HashCode].Normal.X += vP2.Normal.X;
+                        vPDic[vP2.HashCode].Normal.Y += vP2.Normal.Y;
+                        vPDic[vP2.HashCode].Normal.Z += vP2.Normal.Z;
+
                         if (!vPDic.ContainsKey(vP3.HashCode)) vPDic.Add(vP3.HashCode, vP3);
+                        vPDic[vP3.HashCode].Normal.X += vP3.Normal.X;
+                        vPDic[vP3.HashCode].Normal.Y += vP3.Normal.Y;
+                        vPDic[vP3.HashCode].Normal.Z += vP3.Normal.Z;
 
                         #endregion
 
@@ -157,16 +172,17 @@ namespace BlocksCraft.ModelIncubation
                 }
                 #endregion
 
-                #region 计算顶点法向量
-
-
-                #endregion
-
-                double[] Vertices = new double[vPDic.Count];
-                Int32[] Indexes = new Int32[vPIndex.Count];
-                double[] Normals = new double[vPDic.Count];
+                #region 输出结构化数据到顺序数组
+                //double[] Vertices = new double[vPDic.Count*3];
+                double[] Vertices = new double[vPIndex.Count * 3 * 3];//由于顶点被按照索引展开，这里需要额外的空间。
+                Int32[] Indexes = new Int32[vPIndex.Count * 3];
+                double[] Normals = new double[Vertices.Length];
 
                 int j = 0;
+                for (int i = 0; i < Indexes.Length; i++)
+                {
+                    Indexes[i] = i;//顺序写入索引，之后的点序列按照这个索引展开
+                }
                 foreach (Index index in vPIndex)
                 {
                     //这里又产生了重复数据，我不知道要怎么再不产生重复的基础上写入数组
@@ -175,15 +191,30 @@ namespace BlocksCraft.ModelIncubation
                     Vertices[j + 3] = vPDic[index.P2].X; Vertices[j + 4] = vPDic[index.P2].Y; Vertices[j + 5] = vPDic[index.P2].Z;
                     Vertices[j + 6] = vPDic[index.P3].X; Vertices[j + 7] = vPDic[index.P3].Y; Vertices[j + 8] = vPDic[index.P3].Z;
                     #endregion
-                    #region 紧接着写入索引
-                    Indexes[j / 3] = j / 3;
-                    Indexes[(j / 3) + 1] = j / 3;
-                    Indexes[(j / 3) + 2] = j / 3;
+
+                    #region 写入法向量
+                    Normals[j / 9] = vPDic[index.P1].Normal.X;
+                    Normals[(j / 9) + 1] = vPDic[index.P1].Normal.Y;
+                    Normals[(j / 9) + 2] = vPDic[index.P1].Normal.Z;
+                    
+                    Normals[(j / 9) + 3] = vPDic[index.P2].Normal.X;
+                    Normals[(j / 9) + 4] = vPDic[index.P2].Normal.Y;
+                    Normals[(j / 9) + 5] = vPDic[index.P2].Normal.Z;
+
+                    Normals[(j / 9) + 6] = vPDic[index.P3].Normal.X;
+                    Normals[(j / 9) + 7] = vPDic[index.P3].Normal.Y;
+                    Normals[(j / 9) + 8] = vPDic[index.P3].Normal.Z;
+
+                    #endregion
 
                     j += 9;
-                    #endregion
                 }
-                
+                #endregion
+
+                mesh.Vertices = Vertices;
+                mesh.Indexes = Indexes;
+                mesh.Normals = Normals;
+
                 geoModel.Meshes.Clear();
                 geoModel.Meshes.Add(mesh);
             }
@@ -193,10 +224,14 @@ namespace BlocksCraft.ModelIncubation
             public int HashCode;
 
             public double X, Y, Z;
-            public Normal Normal;
+            public Normal Normal = new Normal();
 
-            public Vertice()
+            public Vertice(double X, double Y,double Z)
             {
+                this.X = X;
+                this.Y = Y;
+                this.Z = Z;
+
                 this.HashCode = GetHashCode();
             }
             /// <summary>
@@ -205,7 +240,8 @@ namespace BlocksCraft.ModelIncubation
             /// <returns>相同坐标点具有相同的hashcode</returns>
             public override int GetHashCode()
             {
-                return (((int)(X * 100)) ^ ((int)(Y * 100)) ^ ((int)(Z * 100))).GetHashCode();
+                string s = Convert.ToString(X) + Convert.ToString(Y) + Convert.ToString(Z);
+                return s.GetHashCode();
             }
         };
         class Index
