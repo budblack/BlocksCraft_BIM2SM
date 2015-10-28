@@ -36,6 +36,7 @@ namespace BlocksCraft.ModelIncubation
             {
                 ps.Remove(i);
             }
+            if (ps.Count < 4) return null;
             #endregion
 
             Mesh mesh = new Mesh();
@@ -140,7 +141,7 @@ namespace BlocksCraft.ModelIncubation
                         vP.Value.Normal.Z /= distence;
                     }
                 }
-                geoModel.MakeMesh(vPDic, vPIndex);
+                geoModel.MakeMeshAll(vPDic, ref vPIndex);
             }
         }
        public  class Vertice
@@ -181,7 +182,7 @@ namespace BlocksCraft.ModelIncubation
         /// <param name="geoModel"></param>
         /// <param name="vPDic">顶点集合</param>
         /// <param name="vPIndex">索引列表</param>
-        public static void MakeMesh(this GeoModel geoModel, Dictionary<int, Vertice> vPDic, List<Index> vPIndex)
+       public static void MakeMesh(this GeoModel geoModel, Dictionary<int, Vertice> vPDic, ref List<Index> vPIndex)
        {
            #region 输出结构化数据到顺序数组
            //double[] Vertices = new double[vPDic.Count*3];
@@ -241,9 +242,8 @@ namespace BlocksCraft.ModelIncubation
         /// <param name="geoModel"></param>
         /// <param name="vPDic">顶点集合</param>
         /// <param name="vPIndex">索引列表</param>
-        public static void MekeMeshAll(this GeoModel geoModel, Dictionary<int, Vertice> vPDic, ref List<Index> vPIndex)
+        public static void MakeMeshAll(this GeoModel geoModel, Dictionary<int, Vertice> vPDic, ref List<Index> vPIndex)
         {
-            double[] Vertices = new double[vPIndex.Count * 3 * 3];//由于顶点被按照索引展开，这里需要额外的空间。
             vPIndex = new List<Index>();
             foreach (KeyValuePair<int,Vertice> vP1 in vPDic)
             {
@@ -264,30 +264,38 @@ namespace BlocksCraft.ModelIncubation
                 }
             }
             Mesh mesh = new Mesh();
-            Int32[] Indexes = new Int32[vPIndex.Count * 3];
+            double[] Vertices = new double[vPDic.Count * 3];//由于顶点被按照索引展开，这里需要额外的空间。
+            Int32[] Indexes = new Int32[Vertices.Length * 3];
             double[] Normals = new double[Vertices.Length];
 
-            
+            int ii = 0;
+            foreach (KeyValuePair<int, Vertice> vP in vPDic)
+            {
+                Vertices[ii] = vP.Value.X;
+                Vertices[ii+1] = vP.Value.Y;
+                Vertices[ii+2] = vP.Value.Z;
+                ii += 3;
+            }
+
+            for (int i = 0; i < vPDic.Count; i++)
+            {
+                for (int j = 0; j < vPDic.Count; j++)
+                {
+                    if (i == j) continue;
+                    for (int k = 0; k < vPDic.Count; k++)
+                    {
+                        if (i == k || j == k) continue;
+                        Indexes[i*3] = i;
+                        Indexes[i*3 + 1] = j;
+                        Indexes[i*3 + 2] = k;
+                    }
+                }
+            }
 
             mesh.Vertices = Vertices;
             mesh.Indexes = Indexes;
             mesh.Normals = Normals;
         }
-        /// <summary>
-        /// 单参数有返回值递归方法生成器。
-        /// </summary>
-        /// <typeparam name="T">单参数方法参数类型。</typeparam>
-        /// <typeparam name="TResult">方法返回值类型。</typeparam>
-        /// <param name="f">递归运算描述方法。</param>
-        /// <returns>生成器生成递归方法。</returns>
-        static Func<T, TResult> RFunc<T, TResult>(Func<Func<T, TResult>, T, TResult> f)
-        {
-            return x => f(RFunc(f), x);
-        }
-        /// <summary>
-        /// 阶乘方法实现。
-        /// </summary>
-        static Func<int, int> factorial = RFunc<int, int>((f, n) => n == 1 ? 1 : n * f(n - 1));
 
         /// <summary>
         /// 提取结构化的数据
@@ -371,6 +379,7 @@ namespace BlocksCraft.ModelIncubation
         /// <param name="surface">切割平面</param>
         public static void ClipModel(this GeoModel geoModel, Surface surface)
         {
+            if (geoModel.Meshes == null) return;
             #region 提取顶点
             Dictionary<int, Vertice> vPDic;
             List<Index> vPIndex;
@@ -567,7 +576,7 @@ namespace BlocksCraft.ModelIncubation
             Mesh m = geoModel.CreateMesh(ps);
             geoModel.Meshes.Clear();
             geoModel.Meshes.Add(m);
-            geoModel.MakeMesh(vPDic, vPIndex);
+            geoModel.MakeMesh(vPDic, ref vPIndex);
 
             geoModel.CalculateNormals(ref vPDic, vPIndex);
         }

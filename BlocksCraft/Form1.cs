@@ -68,6 +68,27 @@ namespace BlocksCraft
                 }
             }
         }
+
+        private void button2_Click(object sender, EventArgs e)
+        {
+            foreach (Datasource datasource in ws.Datasources)
+            {
+                foreach (Dataset dataset in datasource.Datasets)
+                {
+                    switch (dataset.Type)
+                    {
+                        case DatasetType.CAD:
+                            Phineas p = new Phineas()
+                            {
+                                dv = dataset as DatasetVector,
+                                scene = scon.Scene
+                            };
+                            new Thread(p.ClipTest).Start();
+                            break;
+                    }
+                }
+            }
+        }
     }
     class Phineas
     {
@@ -93,8 +114,37 @@ namespace BlocksCraft
                 model.Position = gm.Position;
                 model.MergeMeshs();
                 Console.WriteLine("");
+
+                model.Position = gm.Position;
+                model.ComputeBoundingBox();
+                scene.TrackingLayer.Add(model, model.Position.ToString());
+                scene.Refresh();
+                Thread.Sleep(1000);
+
+                break;
+            }
+        }
+
+        public void ClipTest()
+        {
+            scene.TrackingLayer.Clear();
+            Recordset rc = dv.GetRecordset(false, CursorType.Dynamic);
+            Dictionary<int, Feature> feas = rc.GetAllFeatures();
+
+            foreach (KeyValuePair<int, Feature> item in feas)
+            {
+                GeoModel gm = item.Value.GetGeometry() as GeoModel;
+                Console.WriteLine("==" + gm.Position + "==");
+
+                GeoModel model = new ModelIncubation.CuboidModel(10, 10, 10);
+
+                //临时处理，未知原因导致Position.Z属性设置无效，手动偏移模型实体
+                model.OffsetModel(new Point3D(0, 0, 1650));
+                model.Position = gm.Position;
+                model.MergeMeshs();
+                Console.WriteLine("");
                 #region 模型切割测试
-                GeoModelEx.Surface s = new GeoModelEx.Surface(0, 0, 1, -1652);
+                GeoModelEx.Surface s = new GeoModelEx.Surface(0.1, 0.5, 1, -1652);
                 model.ClipModel(s);
                 #endregion
                 model.Position = gm.Position;
