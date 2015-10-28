@@ -50,6 +50,7 @@ namespace BlocksCraft
 
         private void button1_Click(object sender, EventArgs e)
         {
+            this.scon.Scene.TrackingLayer.Clear();
             foreach (Datasource datasource in ws.Datasources)
             {
                 foreach (Dataset dataset in datasource.Datasets)
@@ -71,6 +72,7 @@ namespace BlocksCraft
 
         private void button2_Click(object sender, EventArgs e)
         {
+            this.scon.Scene.TrackingLayer.Clear();
             foreach (Datasource datasource in ws.Datasources)
             {
                 foreach (Dataset dataset in datasource.Datasets)
@@ -106,8 +108,14 @@ namespace BlocksCraft
                 GeoModel gm = item.Value.GetGeometry() as GeoModel;
                 Console.WriteLine("==" + gm.Position + "==");
 
-                GeoModel model = new ModelIncubation.CuboidModel(10, 10, 10);
-
+                //GeoModel model = new ModelIncubation.CuboidModel(10, 10, 10);
+                Point3Ds p3ds = new Point3Ds();
+                for (int i = 0; i < 7; i++)
+			    {
+                    double seta = 2 * Math.PI * i / 7;
+                    p3ds.Add(new Point3D(Math.Sin(seta)*10, Math.Cos(seta)*10, 0));
+			    }
+                GeoModel model = new ModelIncubation.PrismModel(p3ds, 30);
 
                 //临时处理，未知原因导致Position.Z属性设置无效，手动偏移模型实体
                 model.OffsetModel(new Point3D(0, 0, 1650));
@@ -127,7 +135,6 @@ namespace BlocksCraft
 
         public void ClipTest()
         {
-            scene.TrackingLayer.Clear();
             Recordset rc = dv.GetRecordset(false, CursorType.Dynamic);
             Dictionary<int, Feature> feas = rc.GetAllFeatures();
 
@@ -136,15 +143,21 @@ namespace BlocksCraft
                 GeoModel gm = item.Value.GetGeometry() as GeoModel;
                 Console.WriteLine("==" + gm.Position + "==");
 
-                GeoModel model = new ModelIncubation.CuboidModel(10, 10, 10);
-
+                //GeoModel model = new ModelIncubation.CuboidModel(10, 10, 10);
+                Point3Ds p3ds = new Point3Ds();
+                for (int i = 0; i < 7; i++)
+                {
+                    double seta = 2 * Math.PI * i / 7;
+                    p3ds.Add(new Point3D(Math.Sin(seta) * 10, Math.Cos(seta) * 10, 0));
+                }
+                GeoModel model = new ModelIncubation.PrismModel(p3ds, 30);
                 //临时处理，未知原因导致Position.Z属性设置无效，手动偏移模型实体
                 model.OffsetModel(new Point3D(0, 0, 1650));
                 model.Position = gm.Position;
                 model.MergeMeshs();
                 Console.WriteLine("");
                 #region 模型切割测试
-                GeoModelEx.Surface s = new GeoModelEx.Surface(0.1, 0.5, 1, -1652);
+                GeoModelEx.Surface s = new GeoModelEx.Surface(0.1, 0.5, 1, -1672);
                 model.ClipModel(s);
                 #endregion
                 model.Position = gm.Position;

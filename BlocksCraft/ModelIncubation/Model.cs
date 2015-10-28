@@ -141,15 +141,16 @@ namespace BlocksCraft.ModelIncubation
                         vP.Value.Normal.Z /= distence;
                     }
                 }
-                geoModel.MakeMeshAll(vPDic, ref vPIndex);
+                geoModel.MakeMesh(vPDic, vPIndex);
             }
         }
        public  class Vertice
         {
            public int HashCode { get { return GetHashCode(); } }
 
-            public double X, Y, Z;
-            public Normal Normal = new Normal();
+           public double X, Y, Z;
+           public Normal Normal = new Normal();
+
 
             public Vertice(double X, double Y,double Z)
             {
@@ -182,10 +183,9 @@ namespace BlocksCraft.ModelIncubation
         /// <param name="geoModel"></param>
         /// <param name="vPDic">顶点集合</param>
         /// <param name="vPIndex">索引列表</param>
-       public static void MakeMesh(this GeoModel geoModel, Dictionary<int, Vertice> vPDic, ref List<Index> vPIndex)
+       public static void MakeMesh(this GeoModel geoModel, Dictionary<int, Vertice> vPDic, List<Index> vPIndex)
        {
            #region 输出结构化数据到顺序数组
-           //double[] Vertices = new double[vPDic.Count*3];
            double[] Vertices = new double[vPIndex.Count * 3 * 3];//由于顶点被按照索引展开，这里需要额外的空间。
            Int32[] Indexes = new Int32[vPIndex.Count * 3];
            double[] Normals = new double[Vertices.Length];
@@ -231,7 +231,8 @@ namespace BlocksCraft.ModelIncubation
            mesh.Indexes = Indexes;
            mesh.Normals = Normals;
 
-           //geoModel.Meshes.Clear();
+           geoModel.Meshes.Clear();
+
            geoModel.Meshes.Add(mesh);
        }
 
@@ -472,6 +473,26 @@ namespace BlocksCraft.ModelIncubation
                                 wellBeAdd.Add(vIn2);
                                 #endregion
                             }
+                            //P1在下，P2,P3在上
+                            else
+                            {
+                                #region
+                                Vertice vP1 = surface.Intersect(vPDic[index.P1], vPDic[index.P2]);//第一个交点
+                                Vertice vP2 = surface.Intersect(vPDic[index.P1], vPDic[index.P3]);//第二个交点
+
+                                //插入新生成的两个点，并添加这两点和剩下一点构成三角面的索引
+                                if (!vPDic.ContainsKey(vP1.HashCode)) vPDic.Add(vP1.HashCode, vP1);
+                                if (!vPDic.ContainsKey(vP2.HashCode)) vPDic.Add(vP2.HashCode, vP2);
+                                Index vIn = new Index()
+                                {
+                                    P1 = vP1.HashCode,
+                                    P2 = vP2.HashCode,
+                                    P3 = vPDic[index.P1].HashCode
+                                };
+                                //vPIndex.Add(vIn);
+                                wellBeAdd.Add(vIn);
+                                #endregion
+                            }
                             #endregion
                         }
                         else
@@ -574,9 +595,10 @@ namespace BlocksCraft.ModelIncubation
             Point3Ds ps = new Point3Ds();
             ps.ImportVPList(vPDic, wellBeAdd);
             Mesh m = geoModel.CreateMesh(ps);
-            geoModel.Meshes.Clear();
+            //geoModel.Meshes.Clear();
             geoModel.Meshes.Add(m);
-            geoModel.MakeMesh(vPDic, ref vPIndex);
+            geoModel.MergeMeshs();
+            geoModel.MakeMesh(vPDic, vPIndex);
 
             geoModel.CalculateNormals(ref vPDic, vPIndex);
         }
