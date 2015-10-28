@@ -20,6 +20,24 @@ namespace BlocksCraft.ModelIncubation
         /// <returns></returns>
         public static Mesh CreateMesh(this GeoModel geoMoel, Point3Ds ps)
         {
+            //顶点去重
+            #region
+            List<int> wellBeRm = new List<int>();
+            for (int i = ps.Count - 1; i >= 0; i--)
+            {
+                for (int j = 0; j < i; j++)
+                {
+                    if (i == 0) break;
+                    if (ps[i].X == ps[j].X && ps[i].Y == ps[j].Y && ps[i].Z == ps[j].Z)
+                        if (!wellBeRm.Contains(i)) wellBeRm.Add(i);
+                }
+            }
+            foreach (int i in wellBeRm)
+            {
+                ps.Remove(i);
+            }
+            #endregion
+
             Mesh mesh = new Mesh();
 
             Double[] Vertices = new Double[ps.Count * 3];
@@ -100,7 +118,7 @@ namespace BlocksCraft.ModelIncubation
         /// 该方法可将geomodel中的mesh集合合并为一个mesh对象
         /// </summary>
         /// <param name="geoModel"></param>
-        /// <param name="Tolerance">容差，小数点后位数。设置后所有点坐标的小数点后只保留该长度（这个功能还没想好，暂时无视掉←，←）</param>
+        /// <param name="Tolerance">容差，小数点后位数。设置后所有点坐标的小数点后只保留该长度</param>
         public static void MergeMeshs(this GeoModel geoModel, int Tolerance=2)
         {
             if (geoModel.Meshes.Count > 0)
@@ -111,7 +129,17 @@ namespace BlocksCraft.ModelIncubation
                 List<Index> vPIndex;
 
                 geoModel.structureData(Tolerance,out vPDic,out vPIndex);
-
+                //归一化法线
+                foreach (KeyValuePair<int, Vertice> vP in vPDic)
+                {
+                    double distence = Math.Sqrt(Math.Pow(vP.Value.Normal.X, 2) + Math.Pow(vP.Value.Normal.Y, 2) + Math.Pow(vP.Value.Normal.Z, 2));
+                    if (distence>0)
+                    {
+                        vP.Value.Normal.X /= distence;
+                        vP.Value.Normal.Y /= distence;
+                        vP.Value.Normal.Z /= distence;
+                    }
+                }
                 geoModel.MakeMesh(vPDic, vPIndex);
             }
         }
@@ -482,11 +510,13 @@ namespace BlocksCraft.ModelIncubation
             }
 
             Point3Ds ps = new Point3Ds();
-            ps.ImportVPList(vPDic,wellBeAdd);
+            ps.ImportVPList(vPDic, wellBeAdd);
             Mesh m = geoModel.CreateMesh(ps);
             geoModel.Meshes.Clear();
             geoModel.Meshes.Add(m);
             geoModel.MakeMesh(vPDic, vPIndex);
+
+            geoModel.CalculateNormals(ref vPDic, vPIndex);
         }
 
         /// <summary>
@@ -495,25 +525,50 @@ namespace BlocksCraft.ModelIncubation
         /// <param name="geoModel"></param>
         public static void CalculateNormals(this GeoModel geoModel, ref Dictionary<int, Vertice> vPDic, List<Index> vPIndex)
         {
-            Normal normal = new Normal();
+            Normal normal1,normal2,normal3;
             foreach (Index index in vPIndex)
             {
-                double a1 = vPDic[index.P2].X - vPDic[index.P1].X,
-                   a2 = vPDic[index.P2].Y - vPDic[index.P1].Y,
-                   a3 = vPDic[index.P2].Z - vPDic[index.P1].Z,
+                normal1 = vPDic[index.P1].Normal;
+                normal2 = vPDic[index.P2].Normal;
+                normal3 = vPDic[index.P3].Normal;
 
-                   b1 = vPDic[index.P3].X - vPDic[index.P1].X,
-                   b2 = vPDic[index.P3].Y - vPDic[index.P1].Y,
-                   b3 = vPDic[index.P3].Z - vPDic[index.P1].Z;
+                double a1 = vPDic[index.P2].X - vPDic[index.P1].X,
+                       a2 = vPDic[index.P2].Y - vPDic[index.P1].Y,
+                       a3 = vPDic[index.P2].Z - vPDic[index.P1].Z,
+
+                       b1 = vPDic[index.P3].X - vPDic[index.P1].X,
+                       b2 = vPDic[index.P3].Y - vPDic[index.P1].Y,
+                       b3 = vPDic[index.P3].Z - vPDic[index.P1].Z;
 
                 double aXb1 = a2 * b3 - a3 * b2,
                        aXb2 = a3 * b1 - a1 * b3,
                        aXb3 = a1 * b2 - a2 * b1;
+                #region 法线正向
+                //法线投影到XY平面，(aXb1,aXb2)+(Px,Py)长度大于(Px,Py)，则为正
+                if ((Math.Pow(vPDic[index.P1].X + aXb1, 2) + Math.Pow(vPDic[index.P1].Y + aXb2, 2)) < (Math.Pow(vPDic[index.P1].X, 2) + Math.Pow(vPDic[index.P1].Y, 2)))
+                {
+                    aXb1 *= -1;
+                    aXb2 *= -1;
+                    aXb3 *= -1;
+                }
 
-                normal.X = aXb1; normal.Y = aXb2; normal.Z = aXb3;
-                vPDic[index.P1].Normal = normal;
-                vPDic[index.P2].Normal = normal;
-                vPDic[index.P3].Normal = normal;
+                #endregion
+
+                normal1.X += aXb1; normal1.Y = aXb2; normal1.Z = aXb3;
+                normal2.X += aXb1; normal2.Y = aXb2; normal2.Z = aXb3;
+                normal3.X += aXb1; normal3.Y = aXb2; normal3.Z = aXb3;
+
+                //归一化法线
+                double d1 = Math.Sqrt(Math.Pow(normal1.X, 2) + Math.Pow(normal1.Y, 2) + Math.Pow(normal1.Z, 2));
+                double d2 = Math.Sqrt(Math.Pow(normal2.X, 2) + Math.Pow(normal2.Y, 2) + Math.Pow(normal2.Z, 2));
+                double d3 = Math.Sqrt(Math.Pow(normal3.X, 2) + Math.Pow(normal3.Y, 2) + Math.Pow(normal3.Z, 2));
+                if (d1 > 0) { normal1.X /= d1; normal1.Y /= d1; normal1.Z /= d1; }
+                if (d2 > 0) { normal2.X /= d2; normal2.Y /= d2; normal2.Z /= d2; }
+                if (d3 > 0) { normal3.X /= d3; normal3.Y /= d3; normal3.Z /= d3; }
+
+                vPDic[index.P1].Normal = normal1;
+                vPDic[index.P2].Normal = normal2;
+                vPDic[index.P3].Normal = normal3;
             }
         }
 
@@ -573,6 +628,12 @@ namespace BlocksCraft.ModelIncubation
             }
         }
 
+        /// <summary>
+        /// 从vPDic和vPIndex导入顶点到Point3Ds
+        /// </summary>
+        /// <param name="ps"></param>
+        /// <param name="vPDic"></param>
+        /// <param name="vPIndex"></param>
         public static void ImportVPList(this Point3Ds ps,Dictionary<int, Vertice> vPDic, List<Index> vPIndex)
         {
             foreach (Index index in vPIndex)
@@ -581,6 +642,33 @@ namespace BlocksCraft.ModelIncubation
                 ps.Add(new Point3D(vPDic[index.P2].X, vPDic[index.P2].Y, vPDic[index.P2].Z));
                 ps.Add(new Point3D(vPDic[index.P3].X, vPDic[index.P3].Y, vPDic[index.P3].Z));
             }
+            //foreach (KeyValuePair<int, Vertice> vP in vPDic)
+            //{
+            //    ps.Add(new Point3D(vP.Value.X, vP.Value.Y, vP.Value.Z));
+            //}
+        }
+
+        /// <summary>
+        /// 导出Point3Ds数据到vPDic和vPIndex（未完成，需要一个三角网构成算法，在这儿调用。同时替代以前构成mesh时候用的临时算法)
+        /// </summary>
+        /// <param name="ps"></param>
+        /// <param name="vPDic"></param>
+        /// <param name="vPIndex"></param>
+        public static void ExportVPList(this Point3Ds ps, ref Dictionary<int, Vertice> vPDic, ref List<Index> vPIndex)
+        {
+            foreach (Point3D p3d in ps)
+            {
+                Vertice vp = new Vertice(p3d.X, p3d.Y, p3d.Z);
+                if (!vPDic.ContainsKey(vp.HashCode))
+                {
+                    vPDic.Add(vp.HashCode, vp);
+                }
+
+            }
+
+            #region 调用一个三角网构建算法
+
+            #endregion
         }
     }
 }

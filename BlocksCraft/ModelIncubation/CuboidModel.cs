@@ -23,8 +23,8 @@ namespace BlocksCraft.ModelIncubation
             Point3Ds Top = new Point3Ds();
             for (int i = 0; i < 4; i++)
 			{
-                Bottom.Add(new Point3D(((i + 1)/ 2) % 2 * a, i / 2 * b, 0));
-                Top.Add(new Point3D(((i + 1) / 2) % 2 * a, i / 2 * b, c));
+                Bottom.Add(new Point3D(((i + 1) / 2) % 2 * a - a / 2, i / 2 * b - b / 2, 0));
+                Top.Add(new Point3D(((i + 1) / 2) % 2 * a - a / 2, i / 2 * b - b / 2, c));
 			}
             InitModel(Bottom, Top);
         }
