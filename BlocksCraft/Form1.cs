@@ -85,7 +85,7 @@ namespace BlocksCraft
                 GeoModel gm = item.Value.GetGeometry() as GeoModel;
                 Console.WriteLine("==" + gm.Position + "==");
 
-                GeoModel model = new ModelIncubation.CuboidModel(0.5, 0.5, 10);
+                GeoModel model = new ModelIncubation.CuboidModel(10, 10, 10);
 
 
                 //临时处理，未知原因导致Position.Z属性设置无效，手动偏移模型实体
@@ -103,7 +103,7 @@ namespace BlocksCraft
                 scene.Refresh();
                 Thread.Sleep(1000);
 
-                //break;
+                break;
             }
         }
     }

@@ -145,7 +145,7 @@ namespace BlocksCraft.ModelIncubation
         }
        public  class Vertice
         {
-            public int HashCode;
+           public int HashCode { get { return GetHashCode(); } }
 
             public double X, Y, Z;
             public Normal Normal = new Normal();
@@ -155,8 +155,6 @@ namespace BlocksCraft.ModelIncubation
                 this.X = X;
                 this.Y = Y;
                 this.Z = Z;
-
-                this.HashCode = GetHashCode();
             }
             /// <summary>
             /// 重写GetHashCode，精确到厘米
@@ -178,12 +176,12 @@ namespace BlocksCraft.ModelIncubation
         }
 
         /// <summary>
-        /// 根据结构化的数据制作mesh
+        /// 根据结构化的数据制作mesh,三角网构造算法还没写好。此函数构造的面连线不正确
         /// </summary>
         /// <param name="geoModel"></param>
         /// <param name="vPDic">顶点集合</param>
         /// <param name="vPIndex">索引列表</param>
-       public static void MakeMesh(this GeoModel geoModel, Dictionary<int, Vertice> vPDic, List<Index> vPIndex)
+        public static void MakeMesh(this GeoModel geoModel, Dictionary<int, Vertice> vPDic, List<Index> vPIndex)
        {
            #region 输出结构化数据到顺序数组
            //double[] Vertices = new double[vPDic.Count*3];
@@ -235,6 +233,61 @@ namespace BlocksCraft.ModelIncubation
            //geoModel.Meshes.Clear();
            geoModel.Meshes.Add(mesh);
        }
+
+
+        /// <summary>
+        /// 每三点都连成一个三角片
+        /// </summary>
+        /// <param name="geoModel"></param>
+        /// <param name="vPDic">顶点集合</param>
+        /// <param name="vPIndex">索引列表</param>
+        public static void MekeMeshAll(this GeoModel geoModel, Dictionary<int, Vertice> vPDic, ref List<Index> vPIndex)
+        {
+            double[] Vertices = new double[vPIndex.Count * 3 * 3];//由于顶点被按照索引展开，这里需要额外的空间。
+            vPIndex = new List<Index>();
+            foreach (KeyValuePair<int,Vertice> vP1 in vPDic)
+            {
+                foreach (KeyValuePair<int, Vertice> vP2 in vPDic)
+                {
+                    foreach (KeyValuePair<int, Vertice> vP3 in vPDic)
+                    {
+                        if (vP1.Value.HashCode == vP1.Value.HashCode && vP1.Value.HashCode == vP2.Value.HashCode && vP2.Value.HashCode == vP3.Value.HashCode)
+                            continue;
+                        Index index = new Index(){
+                            P1=vP1.Key,
+                            P2=vP1.Key,
+                            P3=vP1.Key,
+                        };
+                        vPIndex.Add(index);
+                    }
+                    
+                }
+            }
+            Mesh mesh = new Mesh();
+            Int32[] Indexes = new Int32[vPIndex.Count * 3];
+            double[] Normals = new double[Vertices.Length];
+
+            
+
+            mesh.Vertices = Vertices;
+            mesh.Indexes = Indexes;
+            mesh.Normals = Normals;
+        }
+        /// <summary>
+        /// 单参数有返回值递归方法生成器。
+        /// </summary>
+        /// <typeparam name="T">单参数方法参数类型。</typeparam>
+        /// <typeparam name="TResult">方法返回值类型。</typeparam>
+        /// <param name="f">递归运算描述方法。</param>
+        /// <returns>生成器生成递归方法。</returns>
+        static Func<T, TResult> RFunc<T, TResult>(Func<Func<T, TResult>, T, TResult> f)
+        {
+            return x => f(RFunc(f), x);
+        }
+        /// <summary>
+        /// 阶乘方法实现。
+        /// </summary>
+        static Func<int, int> factorial = RFunc<int, int>((f, n) => n == 1 ? 1 : n * f(n - 1));
 
         /// <summary>
         /// 提取结构化的数据
