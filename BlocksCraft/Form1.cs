@@ -43,11 +43,38 @@ namespace BlocksCraft
             ws.Open(wsCon);
 
             scon.Scene.Workspace = ws;
-            scon.Scene.Open(ws.Scenes[0]);
+            scon.Scene.Open(ws.Scenes[1]);
             scon.Scene.Sun.IsVisible = true;
-            scon.Scene.EnsureVisible(scon.Scene.Layers[0]);
+            //scon.Scene.EnsureVisible(scon.Scene.Layers[0]);
+
+            scon.ObjectSelected += scon_ObjectSelected;
         }
 
+        void scon_ObjectSelected(object sender, ObjectSelectedEventArgs e)
+        {
+            //scon.Scene.Layers[0].Selection.ToRecordset();
+
+            Test m_Lis = new Test();
+
+            scon.AddFrameListener(m_Lis);
+        }
+
+        class Test : FrameListener
+        {
+
+            public Test()
+            {
+                ;
+            }
+            public override bool frameEnded()
+            {
+                return true;
+            }
+            public override bool frameStarted()
+            {
+                return true;
+            }
+        }
         private void button1_Click(object sender, EventArgs e)
         {
             this.scon.Scene.TrackingLayer.Clear();
@@ -91,6 +118,28 @@ namespace BlocksCraft
                 }
             }
         }
+
+        private void button3_Click(object sender, EventArgs e)
+        {
+            Point3Ds p3ds = new Point3Ds();
+            p3ds.Add(new Point3D(0, 0, 0));
+            p3ds.Add(new Point3D(0, 0.8, 0));
+            p3ds.Add(new Point3D(0.8, 0.8, 0));
+            p3ds.Add(new Point3D(0.8, 0, 0));
+            scon.Scene.EnsureVisible(new Rectangle2D(new Point2D(0, 0), new Size2D(0.5, 0.5)));
+            GeoModel gm = new PrismModel(p3ds, 0.2);
+            gm.Position = new Point3D(0,0,0);
+            gm.OffsetModel(new Point3D(0, 0, scon.Scene.GetAltitude(0, 0) + 100));
+            for (int i = 0; i < 30; i++)
+            {
+                for (int j = 0; j < 40; j++)
+                {
+                    gm.OffsetModel(new Point3D(i,j,0));
+                    scon.Scene.TrackingLayer.Add(gm,string.Format("{0}-{1}",i,j));
+                    gm.OffsetModel(new Point3D(0-i, 0-j, 0));
+                }
+            }
+        }
     }
     class Phineas
     {
@@ -127,6 +176,7 @@ namespace BlocksCraft
                 model.ComputeBoundingBox();
                 scene.TrackingLayer.Add(model, model.Position.ToString());
                 scene.Refresh();
+                GeoModel m = scene.TrackingLayer.Get(0) as GeoModel;
                 Thread.Sleep(1000);
 
                 break;

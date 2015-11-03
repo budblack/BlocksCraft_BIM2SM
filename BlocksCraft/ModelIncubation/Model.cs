@@ -142,6 +142,7 @@ namespace BlocksCraft.ModelIncubation
                     }
                 }
                 geoModel.MakeMesh(vPDic, vPIndex);
+                geoModel.CalculateNormals(ref vPDic, vPIndex);
             }
         }
        public  class Vertice

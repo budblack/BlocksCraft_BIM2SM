@@ -52,16 +52,19 @@
     <Prefer32Bit>true</Prefer32Bit>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="SuperMap.Data">
-      <HintPath>D:\Development\SMD_DotNET_800_10502_23089_51384_x86_unicode_Bin\SuperMap iDesktop 8C\Bin\SuperMap.Data.dll</HintPath>
+    <Reference Include="SuperMap.Data, Version=7.0.0.0, Culture=neutral, PublicKeyToken=0635c574ea890381, processorArchitecture=AMD64">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>D:\Development\SMD_DotNET\Bin\SuperMap.Data.dll</HintPath>
       <Private>False</Private>
     </Reference>
-    <Reference Include="SuperMap.Realspace">
-      <HintPath>D:\Development\SMD_DotNET_800_10502_23089_51384_x86_unicode_Bin\SuperMap iDesktop 8C\Bin\SuperMap.Realspace.dll</HintPath>
+    <Reference Include="SuperMap.Realspace, Version=7.0.0.0, Culture=neutral, PublicKeyToken=0635c574ea890381, processorArchitecture=AMD64">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>D:\Development\SMD_DotNET\Bin\SuperMap.Realspace.dll</HintPath>
       <Private>False</Private>
     </Reference>
-    <Reference Include="SuperMap.UI.Controls">
-      <HintPath>D:\Development\SMD_DotNET_800_10502_23089_51384_x86_unicode_Bin\SuperMap iDesktop 8C\Bin\SuperMap.UI.Controls.dll</HintPath>
+    <Reference Include="SuperMap.UI.Controls, Version=7.0.0.0, Culture=neutral, PublicKeyToken=0635c574ea890381, processorArchitecture=AMD64">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>D:\Development\SMD_DotNET\Bin\SuperMap.UI.Controls.dll</HintPath>
       <Private>False</Private>
     </Reference>
     <Reference Include="System" />
